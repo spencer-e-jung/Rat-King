@@ -1,0 +1,7 @@
+[submodule "Lib/JXON_ahk2"]
+	path = Lib/JXON_ahk2
+	url = https://github.com/TheArkive/JXON_ahk2.git
+[submodule "Lib/Yunit"]
+	path = Lib/Yunit
+	url = https://github.com/Uberi/Yunit.git
+	branch = v2

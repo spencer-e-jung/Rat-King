@@ -1,0 +1,38 @@
+{
+    "applied-layouts": [
+        {
+            "device": {
+                "monitor": "CMN15C3",
+                "monitor-instance": "4&25db2ea&0&UID265988",
+                "serial-number": "0",
+                "monitor-number": 1,
+                "virtual-desktop": "{2D705FE5-1DE8-48F1-91A6-201FA4689AD6}"
+            },
+            "applied-layout": {
+                "uuid": "{147845FA-160A-4D15-9622-7058BEE7B327}",
+                "type": "custom",
+                "show-spacing": false,
+                "spacing": 16,
+                "zone-count": 3,
+                "sensitivity-radius": 0
+            }
+        },
+        {
+            "device": {
+                "monitor": "FancyZones",
+                "monitor-instance": "MultiMonitorDevice",
+                "serial-number": "",
+                "monitor-number": 0,
+                "virtual-desktop": "{2D705FE5-1DE8-48F1-91A6-201FA4689AD6}"
+            },
+            "applied-layout": {
+                "uuid": "{00000000-0000-0000-0000-000000000000}",
+                "type": "priority-grid",
+                "show-spacing": true,
+                "spacing": 16,
+                "zone-count": 3,
+                "sensitivity-radius": 20
+            }
+        }
+    ]
+}
