@@ -4,9 +4,9 @@
 #Include <Yunit\Yunit>
 #Include <Yunit\Window>
 
-Yunit.Use(YunitWindow).Test(TestAutoTile)
+Yunit.Use(YunitWindow).Test(TestRatKing)
 
-class TestAutoTile {
+class TestRatKing {
     static HSHELL_WINDOWDESTROY := 2
     static HSHELL_WINDOWACTIVATED := 4
     static HSHELL_RUDEAPPACTIVATED := 32772
@@ -47,12 +47,12 @@ class TestAutoTile {
     }
 
     static ExpectNoChange(g, fn := unset) {
-        before := TestAutoTile.GetRect(g.Hwnd)
+        before := TestRatKing.GetRect(g.Hwnd)
         before.active := WinActive("ahk_id " g.Hwnd)
         if IsSet(fn)
             fn()
         Sleep(50)
-        after := TestAutoTile.GetRect(g.Hwnd)
+        after := TestRatKing.GetRect(g.Hwnd)
         after.active := WinActive("ahk_id " g.Hwnd)
         Yunit.Assert(before.x == after.x)
         Yunit.Assert(before.y == after.y)
@@ -62,11 +62,11 @@ class TestAutoTile {
     }   
     
     static ExpectNoMove(g, fn := unset) {
-        before := TestAutoTile.GetRect(g.Hwnd)
+        before := TestRatKing.GetRect(g.Hwnd)
         if IsSet(fn)
             fn()
         Sleep(50)
-        after := TestAutoTile.GetRect(g.Hwnd)
+        after := TestRatKing.GetRect(g.Hwnd)
         Yunit.Assert(before.x == after.x)
         Yunit.Assert(before.y == after.y)
         Yunit.Assert(before.w == after.w)
@@ -102,20 +102,20 @@ class TestAutoTile {
         FloatWindowGarbageCollected() {
             global floatWindows
 
-            g := TestAutoTile.CreateTestWindow()
+            g := TestRatKing.CreateTestWindow()
 
             tempHwnd := g.Hwnd
             floatWindows[tempHwnd] := true
 
             Yunit.Assert(floatWindows.Has(tempHwnd))
-            TestAutoTile.Destroy(g)
+            TestRatKing.Destroy(g)
             Yunit.Assert(!floatWindows.Has(tempHwnd))
         }
 
         NonExistantWindowDoesntSnap() {
             ; XXX: To activate a non-existant hwnd we explicitly call OnShellMessage
             OnShellMessage(
-                TestAutoTile.HSHELL_WINDOWACTIVATED
+                TestRatKing.HSHELL_WINDOWACTIVATED
                 , 0xFFFFFF
                 , ""
                 , A_ScriptHwnd
@@ -126,66 +126,66 @@ class TestAutoTile {
         LastActiveWindowDoesntSnap() {
             global lastActiveWindow
             
-            g := TestAutoTile.CreateTestWindow()
+            g := TestRatKing.CreateTestWindow()
             ; XXX: Convert from pointer to numeric.
             lastActiveWindow := g.Hwnd + 0
 
-            TestAutoTile.ExpectNoMove(g, () => TestAutoTile.Activate(g))
-            TestAutoTile.Destroy(g)
+            TestRatKing.ExpectNoMove(g, () => TestRatKing.Activate(g))
+            TestRatKing.Destroy(g)
         }
 
         ; XXX: When deleting a window a new window is focused automatically. We 
         ; don't want automatic snapping for windows activated without user input.
         LastWindowDeletedDoesntSnap() {
-            g1 := TestAutoTile.CreateTestWindow()
-            g2 := TestAutoTile.CreateTestWindow()
+            g1 := TestRatKing.CreateTestWindow()
+            g2 := TestRatKing.CreateTestWindow()
 
-            TestAutoTile.ActivateWithoutShellHook(g2)
-            TestAutoTile.Activate(g1)
+            TestRatKing.ActivateWithoutShellHook(g2)
+            TestRatKing.Activate(g1)
 
-            TestAutoTile.ExpectNoMove(g2, () => g1.Destroy())
-            TestAutoTile.ExpectActive(g2)
-            TestAutoTile.Destroy(g2)
+            TestRatKing.ExpectNoMove(g2, () => g1.Destroy())
+            TestRatKing.ExpectActive(g2)
+            TestRatKing.Destroy(g2)
         }
 
         ; XXX: When minimizing a window a new window is focused automatically. We
         ; don't want automatic snapping for windows activated without user input.
         LastWindowMinimizedDoesntSnap() {
-            g1 := TestAutoTile.CreateTestWindow()
-            g2 := TestAutoTile.CreateTestWindow()
+            g1 := TestRatKing.CreateTestWindow()
+            g2 := TestRatKing.CreateTestWindow()
 
-            TestAutoTile.ActivateWithoutShellHook(g1)
-            TestAutoTile.ActivateWithoutShellHook(g2)
-            TestAutoTile.ExpectNoMove(g1, () => WinMinimize("ahk_id " g2.Hwnd))
+            TestRatKing.ActivateWithoutShellHook(g1)
+            TestRatKing.ActivateWithoutShellHook(g2)
+            TestRatKing.ExpectNoMove(g1, () => WinMinimize("ahk_id " g2.Hwnd))
             
-            TestAutoTile.Destroy(g1)
-            TestAutoTile.Destroy(g2)
+            TestRatKing.Destroy(g1)
+            TestRatKing.Destroy(g2)
         }
 
         ; XXX: A hack to prevent animations from changing lastActiveWindow.
         ; Ideally we would test with an actual window for animations etc.
         ToolWindowDoesntSetLastWindow() {
             global lastActiveWindow
-            g := TestAutoTile.CreateTestWindow("+ToolWindow")
-            TestAutoTile.Activate(g)
+            g := TestRatKing.CreateTestWindow("+ToolWindow")
+            TestRatKing.Activate(g)
             Yunit.Assert(g.Hwnd != lastActiveWindow)
-            TestAutoTile.Destroy(g)
+            TestRatKing.Destroy(g)
         }
 
         UnresizeableWindowDoesntSnap() {
-            g := TestAutoTile.CreateTestWindow("-Resize")
-            TestAutoTile.ExpectNoMove(g, () => TestAutoTile.Activate(g))
-            TestAutoTile.Destroy(g)
+            g := TestRatKing.CreateTestWindow("-Resize")
+            TestRatKing.ExpectNoMove(g, () => TestRatKing.Activate(g))
+            TestRatKing.Destroy(g)
         }
 
         FloatedWindowDoesntSnap() {
             global floatWindows
 
-            g := TestAutoTile.CreateTestWindow()
+            g := TestRatKing.CreateTestWindow()
             floatWindows[g.Hwnd] := true
 
-            TestAutoTile.ExpectNoMove(g, () => TestAutoTile.Activate(g))
-            TestAutoTile.Destroy(g)
+            TestRatKing.ExpectNoMove(g, () => TestRatKing.Activate(g))
+            TestRatKing.Destroy(g)
         }
     }
 
@@ -193,7 +193,7 @@ class TestAutoTile {
         WithMockedZonesMask() {
             static PropName := "FancyZones_zones"
 
-            g := TestAutoTile.CreateTestWindow()
+            g := TestRatKing.CreateTestWindow()
             mask := 45
             DllCall("SetPropW", "Ptr", g.Hwnd, "Str", PropName, "Uint64", mask)
             
@@ -210,12 +210,12 @@ class TestAutoTile {
         WindowAlreadySnappedDoesntSnap() {
             static PropName := "FancyZones_zones"
 
-            g := TestAutoTile.CreateTestWindow()
+            g := TestRatKing.CreateTestWindow()
             tempHwnd := WinExist("A")
             MouseMove(0, 0)
             DllCall("SetPropW", "Ptr", g.Hwnd, "Str", PropName, "UPtr", 1)
-            TestAutoTile.ExpectNoMove(g, () => TestAutoTile.Activate(g))
-            TestAutoTile.Destroy(g)
+            TestRatKing.ExpectNoMove(g, () => TestRatKing.Activate(g))
+            TestRatKing.Destroy(g)
             WinActivate("ahk_id " tempHwnd)
         }
 
@@ -223,21 +223,21 @@ class TestAutoTile {
         ; }
 
         WindowEndsOpaque() {
-            g := TestAutoTile.CreateTestWindow()
+            g := TestRatKing.CreateTestWindow()
 
-            TestAutoTile.Activate(g)
-            TestAutoTile.ExpectOpaque(g)
-            TestAutoTile.Destroy(g)
+            TestRatKing.Activate(g)
+            TestRatKing.ExpectOpaque(g)
+            TestRatKing.Destroy(g)
         }
 
         WindowEndsInZoneIndex() {
-            g := TestAutoTile.CreateTestWindow()
+            g := TestRatKing.CreateTestWindow()
             tempHwnd := WinExist("A")
             MouseMove(0, 0)
             WinMove(0, 0, , , "ahk_id " g.Hwnd)
-            TestAutoTile.Activate(g)
+            TestRatKing.Activate(g)
             Yunit.Assert(GetZoneIndices(g.Hwnd).Length >= 1)
-            TestAutoTile.Destroy(g)
+            TestRatKing.Destroy(g)
             WinActivate("ahk_id " tempHwnd)
         }
     }
@@ -265,25 +265,25 @@ class TestAutoTile {
         
         ; XXX: Requires real running FancyZones with at least two zones.
         ActivateSnappedWindowInZone() {
-            g1 := TestAutoTile.CreateTestWindow()
-            g2 := TestAutoTile.CreateTestWindow()
+            g1 := TestRatKing.CreateTestWindow()
+            g2 := TestRatKing.CreateTestWindow()
             
             tempHwnd := WinExist("A")
             CursorToZone(1)
             MouseGetPos(&mx, &my)
             WinMove(mx, my, , , "ahk_id " g1.Hwnd)
-            TestAutoTile.Activate(g1)
+            TestRatKing.Activate(g1)
 
             CursorToZone(2)
             MouseGetPos(&mx, &my)
             WinMove(mx, my, , , "ahk_id " g2.Hwnd)
-            TestAutoTile.Activate(g2)
+            TestRatKing.Activate(g2)
 
             CursorToZone(1)
             
-            TestAutoTile.ExpectActive(g1)
-            TestAutoTile.Destroy(g1)
-            TestAutoTile.Destroy(g2)
+            TestRatKing.ExpectActive(g1)
+            TestRatKing.Destroy(g1)
+            TestRatKing.Destroy(g2)
             WinActivate("ahk_id " tempHwnd)
         }
     }
