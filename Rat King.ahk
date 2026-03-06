@@ -122,20 +122,20 @@ GetZoneIndices(hwnd) {
 }
 
 SnapWindowToCursorZone(hwnd) {
-    zoneIndexRectPair := CurrentMouseZoneIndexRect()
+    zoneIndexAndRect := CurrentMouseZoneIndexRect()
     windowZones := GetZoneIndices(hwnd)
 
-    if (!zoneIndexRectPair)
+    if (!zoneIndexAndRect)
         return
 
     for (, windowZone in windowZones) {
-        if (windowZone == zoneIndexRectPair[1])
+        if (windowZone == zoneIndexAndRect.index)
             return
     }
 
     WinGetPos(&wx, &wy, &ww, &wh, "ahk_id " hwnd)
-    zx := zoneIndexRectPair[2].x + zoneIndexRectPair[2].w // 2
-    zy := zoneIndexRectPair[2].y + zoneIndexRectPair[2].h // 2
+    zx := zoneIndexAndRect.rect.x + zoneIndexAndRect.rect.w // 2
+    zy := zoneIndexAndRect.rect.y + zoneIndexAndRect.rect.h // 2
     newX := zx - ww // 2 + 10
     newY := zy - wh // 2
     WinSetTransparent(0, "ahk_id " hwnd)
@@ -154,9 +154,9 @@ CurrentMouseZoneIndexRect() {
     zoneRects := GetZoneRects()
     MouseGetPos(&mx, &my)
 
-    for (index, zone in zoneRects) {
-        if (CursorInRect(zone, mx, my))
-            return [index, zone]
+    for (index, rect in zoneRects) {
+        if (CursorInRect(rect, mx, my))
+            return {index: index, rect: rect}
     }
 }
 
