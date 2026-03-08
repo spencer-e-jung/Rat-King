@@ -99,7 +99,7 @@ IsResizeable(hwnd) {
     static WS_THICKFRAME := 0x00040000
     static WS_MAXIMIZEBOX := 0x00010000
     style := WinGetStyle("ahk_id " hwnd)
-    return ((style & WS_THICKFRAME) && (style & WS_MAXIMIZEBOX))
+    return ((style & WS_THICKFRAME) || (style & WS_MAXIMIZEBOX))
 }
 
 ; XXX: This function does not presently include zones that stretched over.
