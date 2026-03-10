@@ -5,6 +5,7 @@
 global fancyZonesPath := EnvGet("LOCALAPPDATA") "\Microsoft\PowerToys\FancyZones"
 global appliedLayoutsFile := fancyZonesPath "\applied-layouts.json"
 global customLayoutsFile := fancyZonesPath "\custom-layouts.json"
+global settingsFile := fancyZonesPath "\settings.json"
 
 global lastMouseCtrlClickTime := 0
 global lastActiveWindow := 0
@@ -12,6 +13,7 @@ global floatWindows := Map()
 
 global appliedLayout := {}
 global customLayouts := {}
+global settings := {}
 
 DllCall("RegisterShellHookWindow", "Ptr", A_ScriptHwnd)
 global msgNum := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK")
@@ -29,16 +31,26 @@ if (!FileExist(appliedLayoutsFile)) {
     return
 }
 
+if (!FileExist(settingsFile)) {
+    MsgBox("FancyZones' settings.json not found in LOCALAPPDATA.")
+    return
+}
+
 ; XXX: We call loadLayouts() without caching on every call to getZoneRect()
 LoadLayouts() {
-    global appliedLayout, customLayouts
+    global appliedLayout, customLayouts, settings
 
     appliedLayoutFileContents := FileRead(appliedLayoutsFile, "UTF-8")
     customLayoutsFileContents := FileRead(customLayoutsFile, "UTF-8")
+    settingsFileContents := FileRead(settingsFile, "UTF-8")
 
     appliedLayout := Jxon_Load(&appliedLayoutFileContents)
     customLayouts := Jxon_Load(&customLayoutsFileContents)
+    settings := Jxon_Load(&settingsFileContents)
 }
+
+; XXX: Initial load to get settings.
+LoadLayouts()
 
 OnShellMessage(wParam, lParam, msg, hwnd) {
     global lastActiveWindow, floatWindows
@@ -65,7 +77,7 @@ OnShellMessage(wParam, lParam, msg, hwnd) {
     lastDeleted := !WinExist("ahk_id " lastActiveWindow)
     lastMinimized := WinExist("ahk_id " lastActiveWindow) &&
         WinGetMinMax("ahk_id " lastActiveWindow) == -1
-
+    
     ; XXX: Some windows receive HSHELL_WINDOWACTIVATED but never activate. This
     ; includes minimization animations.
     if (WinWaitActive("ahk_id " lParam, 1))
@@ -73,11 +85,14 @@ OnShellMessage(wParam, lParam, msg, hwnd) {
 
     if (lastMinimized || lastDeleted)
         return
-
+    
     if (A_TickCount - lastMouseCtrlClickTime <= 500)
         return
-
-    if (!IsResizeable(lParam))
+    
+    ; XXX: Sleep to allow for restore to complete.
+    Sleep(128)
+    
+    if (!IsWindowProcessable(lParam))
         return
 
     for (window in floatWindows)
@@ -94,11 +109,175 @@ CursorInRect(rect, mx, my) {
     )
 }
 
-IsResizeable(hwnd) {
+; XXX: A reimplementation of FancyZonesWindowProcessing::DefineWindowType
+; from FancyZoneLib/FancyZonesWindowProcessing.cpp
+IsWindowProcessable(hwnd) {
+    global settings
+    static WS_VISIBLE := 0x10000000
+    static WS_EX_TOOLWINDOW := 0x00000080
+    static WS_POPUP := 0x800000
     static WS_THICKFRAME := 0x00040000
-    static WS_MAXIMIZEBOX := 0x00010000
+    static WS_CAPTION := 0x00C00000
+    static WS_MINIMIZEBOX := 0x00010000
+    static WS_MAXIMIZEBOX := 0x00020000
+
+    if (WinGetMinMax("ahk_id " hwnd) == -1)
+       return false
+    
     style := WinGetStyle("ahk_id " hwnd)
-    return ((style & WS_THICKFRAME) || (style & WS_MAXIMIZEBOX))
+    exStyle := WinGetExStyle("ahk_id " hwnd)
+
+    if (!(style & WS_VISIBLE))
+        return false
+    
+    if (exStyle & WS_EX_TOOLWINDOW)
+        return false
+
+    if (DllCall("GetAncestor", "Ptr", hwnd, "UInt", GA_ROOT := 2) != hwnd)
+        return false
+    
+    allowPopupSnap := settings["properties"]["fancyzones_allowPopupWindowSnap"]["value"]
+    isPopup := (style & WS_POPUP) != 0
+    hasThickFrame := (style & WS_THICKFRAME) != 0
+    hasCaption := (style & WS_CAPTION) != 0
+    hasMinMaxButtons := (style & WS_MINIMIZEBOX) != 0 || (style & WS_MAXIMIZEBOX) != 0
+
+    if (isPopup && !(hasThickFrame && (hasCaption || hasMinMaxButtons))) {
+        if (!allowPopupSnap)
+            return false
+    }
+
+    ownerHwnd := DllCall("GetWindow", "Ptr", hwnd, "UInt", GW_OWNER := 4)
+    allowChildSnap := settings["properties"]["fancyzones_allowChildWindowSnap"]["value"]
+    if (ownerHwnd && !allowChildSnap)
+        return false
+
+    processName := WinGetProcessName("ahk_id " hwnd)
+    processName := StrLower(processName)
+    excludedApps := settings["properties"]["fancyzones_excluded_apps"]["value"]
+    for (_, excludedApp in StrSplit(excludedApps, "`r"))
+        if (StrLower(excludedApp) == processName)
+            return false
+
+    if (IsExcludedByDefault(hwnd))
+        return false
+    
+    ; XXX: Switch between virtual desktops results with posting same windows
+    ; messages that also indicate creation of new window. However it shouldn't
+    ; be neccessary to check as we only snap if the window is WaitActive in
+    ; SnapWindowToCursorZone.
+    
+    ; if (!IsWindowOnCurrentDesktop(hwnd))
+    ;     return false
+
+    return true
+}
+
+; XXX: A reimplementation of FancyZonesWindowUtils::IsExcludedByDefault from
+; FancyZonesLib/WindowUtils.cpp
+IsExcludedByDefault(hwnd) {
+    processPath := WinGetProcessPath("ahk_id " hwnd)
+    if (!processPath)
+        return false
+
+    if (InStr(StrUpper(processPath), "SYSTEMAPPS"))
+        return true
+
+    className := WinGetClass("ahk_id " hwnd)
+    if (!className)
+        return false
+
+    if (IsSystemWindow(hwnd, className) || className == "MsoSplash")
+        return true
+
+    processName := WinGetProcessName("ahk_id " hwnd)
+    processNameUpper := StrUpper(processName)
+
+    defaultExcludedApps := [
+        "WINDOWS.UI.CORE.COREWINDOW",
+        "SEARCHUI.EXE",
+        "POWERTOYS.FANCYZONESEDITOR.EXE",
+    ]
+
+    if (CheckExcludedApp(hwnd, defaultExcludedApps))
+        return true
+
+    return false
+}
+
+; XXX: A reimplementation of check_excluded_app from
+; PowerToys/src/common/utils/excluded_apps.h
+CheckExcludedApp(hwnd, excludedApps) {
+    processPath := WinGetProcessPath("ahk_id " hwnd)
+    if (!processPath)
+        return false
+
+    processPathUpper := StrUpper(processPath)
+
+    if (FindAppNameInPath(processPathUpper, excludedApps))
+        return true
+
+    if (CheckExcludedAppWithTitle(hwnd, excludedApps))
+        return true
+
+    return false
+}
+
+; XXX: A reimplementation of find_app_name_in_path from
+; PowerToys/src/common/utils/excluded_apps.h
+FindAppNameInPath(where, what) {
+    for (_, app in what) {
+        position := InStr(where, app, , -1)
+        if (position) {
+            lastBackslash := InStr(where, "\", , -1)
+            if (position <= lastBackslash + 1 && 
+                position + StrLen(app) > lastBackslash)
+                return true
+        }
+    }
+    return false
+}
+
+; XXX: A reimplementation of check_excluded_app_with_title from
+; PowerToys/src/common/utils/excluded_apps.h
+CheckExcludedAppWithTitle(hwnd, excludedApps) {
+    title := WinGetTitle("ahk_id " hwnd)
+    if (!title)
+        return false
+
+    titleUpper := StrUpper(title)
+
+    for _, app in excludedApps {
+        if (InStr(titleUpper, app))
+            return true
+    }
+
+    return false
+}
+
+; XXX: A reimplementation of is_system_window from
+; PowerToys/src/common/utils/window.h
+IsSystemWindow(hwnd, className) {
+    static systemClasses := [
+        "Progman",
+        "WorkerW",
+        "Shell_TrayWnd",
+        "Shell_SecondaryTrayWnd",
+        "SysListView32"
+    ]
+
+    desktopWnd := DllCall("GetDesktopWindow", "Ptr")
+    shellWnd := DllCall("GetShellWindow", "Ptr")
+
+    if (hwnd == desktopWnd || hwnd == shellWnd)
+        return true
+
+    for (_, sysClass in systemClasses) {
+        if (className == sysClass)
+            return true
+    }
+
+    return false
 }
 
 ; XXX: This function does not presently include zones that stretched over.
