@@ -66,10 +66,9 @@ OnShellMessage(wParam, lParam, msg, hwnd) {
     lastMinimized := WinExist("ahk_id " lastActiveWindow) &&
         WinGetMinMax("ahk_id " lastActiveWindow) == -1
 
-    ; XXX: A hack to avoid minimization animations replacing lastActiveWindow.
-    exStyle := WinGetExStyle("ahk_id " lParam)
-    static WS_EX_TOOLWINDOW := 128
-    if (!(exStyle & WS_EX_TOOLWINDOW))
+    ; XXX: Some windows receive HSHELL_WINDOWACTIVATED but never activate. This
+    ; includes minimization animations.
+    if (WinWaitActive("ahk_id " lParam, 1))
         lastActiveWindow := lParam
 
     if (lastMinimized || lastDeleted)
