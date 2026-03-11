@@ -89,9 +89,6 @@ OnShellMessage(wParam, lParam, msg, hwnd) {
     if (A_TickCount - lastMouseCtrlClickTime <= 500)
         return
     
-    ; XXX: Sleep to allow for restore to complete.
-    Sleep(128)
-    
     if (!IsWindowProcessable(lParam))
         return
 
