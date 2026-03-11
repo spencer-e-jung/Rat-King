@@ -327,6 +327,10 @@ SnapWindowToCursorZone(hwnd) {
 ; XXX: Can return NULL.
 CurrentMouseZoneIndexRect() {
     zoneRects := GetZoneRects()
+
+    if (!zoneRects)
+        return
+
     MouseGetPos(&mx, &my)
 
     for (index, rect in zoneRects) {
@@ -391,6 +395,9 @@ GetCurrentDesktopUUID() {
     functionPointer := NumGet(vtable, 4 * A_PtrSize, "Ptr")
 
     hwnd := WinExist("A")
+
+    if (!hwnd)
+        return
 
     guid := Buffer(16)
     hr := DllCall(functionPointer, "ptr", obj.Ptr, "ptr", hwnd, "ptr", guid, "cdecl")
