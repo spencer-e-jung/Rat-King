@@ -80,7 +80,7 @@ OnShellMessage(wParam, lParam, msg, hwnd) {
     
     ; XXX: Some windows receive HSHELL_WINDOWACTIVATED but never activate. This
     ; includes minimization animations.
-    if (WinWaitActive("ahk_id " lParam, 1))
+    if (WinWaitActive("ahk_id " lParam, , 1))
         lastActiveWindow := lParam
 
     if (lastMinimized || lastDeleted)
