@@ -346,4 +346,48 @@ class TestRatKing {
             }
         }
     }
+
+    class TestVirtualDesktop {
+        GetLayoutUUIDForMonitor1AndVirtualDesktop() {
+            global appliedLayoutsFile := A_ScriptDir . "\Fixtures\applied-layouts.json"
+            global customLayoutsFile := A_ScriptDir . "\Fixtures\custom-layouts.json"
+            global settingsFile := A_ScriptDir . "\Fixtures\settings.json"
+
+            layoutUUID := GetLayoutUUID(1, "{2D705FE5-1DE8-48F1-91A6-201FA4689AD6}")
+
+            Yunit.Assert(layoutUUID == "{147845FA-160A-4D15-9622-7058BEE7B327}")
+        }
+
+        GetLayoutUUIDForMonitor0AndVirtualDesktop() {
+            global appliedLayoutsFile := A_ScriptDir . "\Fixtures\applied-layouts.json"
+            global customLayoutsFile := A_ScriptDir . "\Fixtures\custom-layouts.json"
+            global settingsFile := A_ScriptDir . "\Fixtures\settings.json"
+
+            layoutUUID := GetLayoutUUID(0, "{2D705FE5-1DE8-48F1-91A6-201FA4689AD6}")
+
+            Yunit.Assert(layoutUUID == "{00000000-0000-0000-0000-000000000000}")
+        }
+
+        GetLayoutUUIDReturnsEmptyForUnknownVirtualDesktop() {
+            global appliedLayoutsFile := A_ScriptDir . "\Fixtures\applied-layouts.json"
+            global customLayoutsFile := A_ScriptDir . "\Fixtures\custom-layouts.json"
+            global settingsFile := A_ScriptDir . "\Fixtures\settings.json"
+
+            layoutUUID := GetLayoutUUID(1, "{FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF}")
+
+            Yunit.Assert(layoutUUID == "")
+        }
+
+        GetLayoutReturnsCorrectLayoutForUUID() {
+            global appliedLayoutsFile := A_ScriptDir . "\Fixtures\applied-layouts.json"
+            global customLayoutsFile := A_ScriptDir . "\Fixtures\custom-layouts.json"
+            global settingsFile := A_ScriptDir . "\Fixtures\settings.json"
+
+            layout := GetLayout("{147845FA-160A-4D15-9622-7058BEE7B327}")
+
+            Yunit.Assert(layout["name"] == "Three Pane")
+            Yunit.Assert(layout["info"]["rows"] == 2)
+            Yunit.Assert(layout["info"]["columns"] == 2)
+        }
+    }
 }
