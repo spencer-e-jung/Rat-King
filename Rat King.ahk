@@ -377,12 +377,37 @@ FindMatchSavePart(source, query, part) {
     }
 }
 
-GetLayoutUUID(monitorNumber) {
-    global appliedLayout
+GetCurrentDesktopUUID() {
+    ; XXX: IVirtualDesktop COM
+    static CLSID := "{AA509086-5CA9-4C25-8F95-589D3C07B48A}"
+    static IID := "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}"
 
+    obj := ComObject(CLSID, IID)
+
+    ; XXX: first ptr is a vtable.
+    vtable := NumGet(obj.Ptr, "Ptr")
+
+    ; XXX: GetWindowDesktopId is the forth function in the vtable.
+    functionPointer := NumGet(vtable, 4 * A_PtrSize, "Ptr")
+
+    hwnd := WinExist("A")
+
+    guid := Buffer(16)
+    hr := DllCall(functionPointer, "ptr", obj.Ptr, "ptr", hwnd, "ptr", guid, "cdecl")
+
+    buf := Buffer(78)
+    DllCall("ole32\StringFromGUID2", "ptr", guid, "ptr", buf, "int", 39)
+
+    return StrGet(buf, "UTF-16")
+}
+
+GetLayoutUUID(monitorNumber, currentVirtualDesktop) {
+    global appliedLayout
+    
     return FindMatchSavePart(
         appliedLayout["applied-layouts"]
-        , (matcher) => matcher["device"]["monitor-number"] == monitorNumber
+        , (matcher) => matcher["device"]["monitor-number"] == monitorNumber &&
+            matcher["device"]["virtual-desktop"] == currentVirtualDesktop
         , (matcher) => matcher["applied-layout"]["uuid"]
     )
 }
@@ -429,7 +454,12 @@ GetZoneRects(monitorNumber := GetMouseMonitor()) {
 
     LoadLayouts()
 
-    layoutUUID := GetLayoutUUID(monitorNumber)
+    currentVirtualDesktop := GetCurrentDesktopUUID()
+
+    if (!currentVirtualDesktop)
+        return
+
+    layoutUUID := GetLayoutUUID(monitorNumber, currentVirtualDesktop)
 
     if (!layoutUUID)
         return
