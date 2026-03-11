@@ -400,7 +400,7 @@ GetCurrentDesktopUUID() {
         return
 
     guid := Buffer(16)
-    hr := DllCall(functionPointer, "ptr", obj.Ptr, "ptr", hwnd, "ptr", guid, "cdecl")
+    DllCall(functionPointer, "ptr", obj.Ptr, "ptr", hwnd, "ptr", guid, "cdecl")
 
     buf := Buffer(78)
     DllCall("ole32\StringFromGUID2", "ptr", guid, "ptr", buf, "int", 39)
